@@ -4,11 +4,15 @@ class ForceTest < ActiveSupport::TestCase
   include Rack::Test::Methods
 
   def dummy_app
-    @dummy_app ||= lambda { |env| [200, {}, ["Dummy app"]] }
+    @dummy_app ||= lambda { |env| [404, {}, ["Dummy app doesn't handle any request"]] }
+  end
+
+  def force_middleware
+    @force_middleware ||= OmniAuth::Strategies::Force.new(dummy_app, 'force-api-key', 'force-api-secret')
   end
 
   def app
-    @app ||= OmniAuth::Strategies::Force.new(dummy_app, 'force-api-key', 'force-api-secret')
+    @app ||= Rack::Session::Cookie.new(force_middleware)
   end
 
   test "request phase should redirect to force login page with correct params" do
@@ -27,7 +31,7 @@ class ForceTest < ActiveSupport::TestCase
     assert_equal params['type'], ['web_server']
   end
 
-  test "callback phase should " do
+  test "callback phase should get access token and set omniauth.auth into env" do
     sf_token = {
       'instance_url' => 'http://instance',
       'id' => 'http://instance/id/123',
@@ -48,15 +52,15 @@ class ForceTest < ActiveSupport::TestCase
       [200, {}, ["Dummy app"]]
     end
 
-    connection = Faraday.new do |builder|
+    connection = Faraday.new('https://login.salesforce.com') do |builder|
       builder.adapter :test do |stub|
         stub.post('/services/oauth2/token') {[ 200, {}, MultiJson.encode(sf_token) ]}
         stub.get('/id/123?oauth_token=token123') {[ 200, {}, MultiJson.encode(sf_user_data) ]}
       end
     end
 
-
-    app.client.connection = connection
+    OAuth2::Client.any_instance.stubs(:connection => connection)
+    force_middleware.client.connection = connection
     get '/auth/force/callback?code=code123'
 
     assert_equal({

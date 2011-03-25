@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
 
-  s.add_dependency  'oa-oauth',   '~> 0.1.6'
-  s.add_dependency  'multi_json', '~> 0.0.2'
-  s.add_dependency  'oauth2',     '~> 0.1.1'
+  s.add_dependency  'omniauth',   '~> 0.2'
+  s.add_dependency  'multi_json'
+  s.add_dependency  'oauth2',     '~> 0.1'
 end

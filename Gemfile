@@ -6,3 +6,4 @@ gemspec
 gem 'activesupport'
 gem 'i18n'
 gem 'rack-test', :require => 'rack/test'
+gem 'mocha'
